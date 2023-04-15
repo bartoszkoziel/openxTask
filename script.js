@@ -4,10 +4,7 @@ window.onload = async () => {
 
    await fetch('https://fakestoreapi.com/products')
       .then(response => response.json())
-      .then(data => {
-         products = data
-         subTask2(products)
-      })
+      .then(data => { products = data })
       .catch(error => console.error(error))
 
    await fetch('https://fakestoreapi.com/users')
@@ -25,7 +22,9 @@ window.onload = async () => {
    console.log("CARTS: ", carts)
    console.log("USERS: ", users)
 
+   subTask2(products)
    subTask3(carts, products, users)
+   subTask4(users)
 
 }
 
@@ -42,7 +41,6 @@ function subTask2(products) {
 
    let list2 = document.createElement("ul")
    for (const key of categories.keys()) {
-      // console.log(key)
       let tr = document.createElement("tr")
       let tdKey = document.createElement("td")
       let tdValue = document.createElement("td")
@@ -56,7 +54,7 @@ function subTask2(products) {
 
    document.body.append(list2)
 
-   console.log("CATEGORIES", categories)
+   console.log("CATEGORIES AND THEIR VALUE", categories)
 }
 
 function subTask3(carts, products, users) {
@@ -76,7 +74,6 @@ function subTask3(carts, products, users) {
       for (let j = 0; j < carts[i].products.length; j++) {
          tempVal += prodToVal.get(carts[i].products[j].productId) * carts[i].products[j].quantity
       }
-      // console.log("KOSZYK NR: ", i, " RAZEM: ", tempVal)
       if (tempVal > maxVal) {
          maxVal = tempVal
          maxValId = carts[i].userId
@@ -93,13 +90,54 @@ function subTask3(carts, products, users) {
    let p = document.createElement("p")
    p.innerHTML = "Cart with the highest value has items worth: $" + maxVal + " and is owned by: " + maxValUser
    document.body.append(p)
+
    // console.log("MAXVAL : ", maxVal)
-   // console.log("MAXVAL_ITER : ", maxValId)
    // console.log("MAXVAL_USER : ", maxValUser)
+
+   console.log("THE CART WITH THE HIGHEST VALUE IS WORTH $", maxVal, " and is owned by ", maxValUser)
 
    // 0: Object { productId: 1, quantity: 4 }
    // 1: Object { productId: 2, quantity: 1 }
    // 2: Object { productId: 3, quantity: 6 }
-
    // 439.8 + 22.3 + 335.94 = 798.04
+}
+
+function subTask4(users) {
+   let maxDist = 0
+   let furthestUsers
+   for (let i = 0; i < users.length - 1; i++) {
+      for (let j = i + 1; j < users.length; j++) {
+         let tempUser1 = { lat: users[i].address.geolocation.lat, long: users[i].address.geolocation.long }
+         let tempUser2 = { lat: users[j].address.geolocation.lat, long: users[j].address.geolocation.long }
+
+
+         const R = 6371e3; // metres
+         const φ1 = tempUser1.lat * Math.PI / 180 // φ, λ in radians
+         const φ2 = tempUser2.lat * Math.PI / 180
+         const Δφ = (tempUser2.lat - tempUser1.lat) * Math.PI / 180
+         const Δλ = (tempUser2.long - tempUser1.long) * Math.PI / 180
+
+         const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
+         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+         const d = Math.round(R * c) / 1000  // in metres
+         // console.log(tempUser1.lat, " ", tempUser1.long, " | ", tempUser2.lat, " ", tempUser2.long, " DISTANCE: ", d, "km")
+
+         if (d > maxDist) {
+            maxDist = d
+            furthestUsers = { u1: users[i], u2: users[j] }
+         }
+      }
+   }
+
+   let p = document.createElement("p")
+   let userName1 = furthestUsers.u1.username
+   let userName2 = furthestUsers.u2.username
+   p.innerHTML = "Users living furthest from each other are: " + userName1 + " and " + userName2 + " They are living " + maxDist + " km apart"
+
+   console.log("USERS LIVING FURTHEST FROM EACH OTHER ARE: " + userName1 + " AND " + userName2 + " THEY ARE LIVING " + maxDist + " KM APART")
+
+   document.body.append(p)
 }

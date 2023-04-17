@@ -1,5 +1,5 @@
 window.onload = async () => {
-   let mode = -1 // 1 for normal, -1 for tests
+   let mode = 1 // 1 for normal, -1 for tests
    if (mode == 1) {
       let users, carts, products
 

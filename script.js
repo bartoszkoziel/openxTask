@@ -1,31 +1,34 @@
 window.onload = async () => {
+   let mode = -1 // 1 for normal, -1 for tests
+   if (mode == 1) {
+      let users, carts, products
 
-   let users, carts, products
+      await fetch('https://fakestoreapi.com/products')
+         .then(response => response.json())
+         .then(data => { products = data })
+         .catch(error => console.error(error))
 
-   await fetch('https://fakestoreapi.com/products')
-      .then(response => response.json())
-      .then(data => { products = data })
-      .catch(error => console.error(error))
+      await fetch('https://fakestoreapi.com/users')
+         .then(response => response.json())
+         .then(data => { users = data })
+         .catch(error => console.error(error))
 
-   await fetch('https://fakestoreapi.com/users')
-      .then(response => response.json())
-      .then(data => { users = data })
-      .catch(error => console.error(error))
-
-   await fetch('https://fakestoreapi.com/carts/?startdate=2000-01-01&enddate=2023-04-07')
-      .then(response => response.json())
-      .then(data => { carts = data })
-      .catch(error => console.error(error))
+      await fetch('https://fakestoreapi.com/carts/?startdate=2000-01-01&enddate=2023-04-07')
+         .then(response => response.json())
+         .then(data => { carts = data })
+         .catch(error => console.error(error))
 
 
-   console.log("PRODUCTS: ", products)
-   console.log("CARTS: ", carts)
-   console.log("USERS: ", users)
+      console.log("PRODUCTS: ", products)
+      console.log("CARTS: ", carts)
+      console.log("USERS: ", users)
 
-   subTask2(products)
-   subTask3(carts, products, users)
-   subTask4(users)
-
+      subTask2(products)
+      subTask3(carts, products, users)
+      subTask4(users)
+   } else if (mode == -1) {
+      runTests()
+   }
 }
 
 function subTask2(products) {
@@ -53,8 +56,9 @@ function subTask2(products) {
    }
 
    document.body.append(list2)
-
    console.log("CATEGORIES AND THEIR VALUE", categories)
+
+   return categories
 }
 
 function subTask3(carts, products, users) {
@@ -91,15 +95,9 @@ function subTask3(carts, products, users) {
    p.innerHTML = "Cart with the highest value has items worth: $" + maxVal + " and is owned by: " + maxValUser
    document.body.append(p)
 
-   // console.log("MAXVAL : ", maxVal)
-   // console.log("MAXVAL_USER : ", maxValUser)
-
    console.log("THE CART WITH THE HIGHEST VALUE IS WORTH $", maxVal, " and is owned by ", maxValUser)
 
-   // 0: Object { productId: 1, quantity: 4 }
-   // 1: Object { productId: 2, quantity: 1 }
-   // 2: Object { productId: 3, quantity: 6 }
-   // 439.8 + 22.3 + 335.94 = 798.04
+   return ({ user: maxValUser, value: maxVal })
 }
 
 function subTask4(users) {
@@ -123,7 +121,6 @@ function subTask4(users) {
          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 
          const d = Math.round(R * c) / 1000  // in metres
-         // console.log(tempUser1.lat, " ", tempUser1.long, " | ", tempUser2.lat, " ", tempUser2.long, " DISTANCE: ", d, "km")
 
          if (d > maxDist) {
             maxDist = d
@@ -140,4 +137,45 @@ function subTask4(users) {
    console.log("USERS LIVING FURTHEST FROM EACH OTHER ARE: " + userName1 + " AND " + userName2 + " THEY ARE LIVING " + maxDist + " KM APART")
 
    document.body.append(p)
+
+   return ({ userName1: userName1, userName2: userName2, distance: maxDist })
+}
+
+function runTests() {
+   fetch('/tests.json')
+      .then(response => response.json())
+      .then(async (data) => {
+         for (let i = 0; i < data.tests.length; i++) {
+            let { users, carts, products, answers } = data.tests[i]
+            let fails = null
+
+            // RUNNING TESTS FOR SUBTASK 2
+            const categories = await subTask2(products)
+            categories.forEach((value, key) => {
+               if (categories.get(key) != answers.task1[key]) {
+                  console.error("TEST FAILED | KEY : ", key, " VALUE : ", value, " EXPECTED : ", answers.task1[key])
+                  fails = 1
+               }
+            })
+
+            // RUNNING TESTS FOR SUBTASK 3
+            const { user, value } = await subTask3(carts, products, users)
+            if (user != answers.task2.user || value != answers.task2.value) {
+               console.error("TEST FAILED | OUTPUT : ", user, " ", value, " EXPECTED : ", answers.task2.user, " ", answers.task2.value)
+               fails = 1
+            }
+
+            // RUNNING TESTS FOR SUBTASK 4
+            const { userName1, userName2, distance } = await subTask4(users)
+            if (userName1 != answers.task3.userName1 || userName2 != answers.task3.userName2 || distance != answers.task3.distance) {
+               console.error("TEST FAILED | OUTPUT : ", userName1, " ", userName2, " ", distance, " EXPECTED : ", answers.task3)
+               fails = 1
+            }
+
+            if (fails == null) {
+               console.info("SET NUMBER: " + i + " PASSED SUCCESSFULLY!")
+            }
+         }
+      })
+      .catch(error => console.error(error))
 }
